@@ -1,0 +1,170 @@
+The group of 90 degrees rotation around an axis form a group.
+
+Let's try to derive the whole set of possible rotations. 
+
+Here is a 3 dimensional cartesian frame.
+   z
+   |
+   |
+   |
+   |________x
+   /
+  /
+ /
+y
+
+
+Let think about what a rotation around x would give:
+
+We would have the following transformation
+
+Then the same coordinate (x, z, y)
+would become in the new frame: (x', z', y')
+
+Where
+- x -> x'
+- y -> -z'
+- z -> y'
+
+So if we rotate the frame, the resulting vector would be, for the same position,
+in the new frame:
+
+(  1   0   0 ) ( x )   ( x' )   (  x  ) 
+(  0   0   1 ) ( y ) = ( y' ) = (  z  )
+(  0  -1   0 ) ( z )   ( z' )   ( -y  )
+
+In the exact same fashion, we can find the rotation matrix for a counter-clockwise rotation
+around the z-axis, with the following transformation:
+
+x -> y'
+y -> -x'
+z -> z'
+
+And the corresponding matrix is:
+
+( 0  -1  0 ) ( x )   ( x' )   ( -y )
+( 1   0  0 ) ( y ) = ( y' ) = (  x )
+( 0   0  1 ) ( z )   ( z' )   (  z )
+
+Last rotation matrix is the rotation around the y-axis; In this case, we would have:
+
+x -> z'
+y -> y'
+z -> -x'
+
+And the following matrix would be:
+
+( 0  0  -1 ) ( x )   ( x' )   ( -z )
+( 0  1   0 ) ( y ) = ( y' ) = (  y )
+( 1  0   0 ) ( z )   ( z' )   (  x )
+
+Let's call this rotation matrices $\alpha$, $\beta$, $\gamma$ respectively.
+
+Notice that a sequence of four rotations around an axis (exponentiation with
+4 as an argument) on one of this matrix generate the identity matrix, eg $\alpha^4 == \Id_{3}$.
+
+To generate the whole possible set of transformation, we can apply matrix multiplication until
+we fill the whole set of possible transformation. It is kind of a generative proof and we will
+cheat by using the computer instead of computing all the tranformations by hand.
+
+But the whole set of transformation should be in 
+
+$$\alpha^{i}\beta^{j}\gamma^{k}, (i, j, k) \in \lbrace 1, 2, 3, 4 \rbrace^3
+
+Here is the following code to do that:
+
+{% include_relative snippet1.txt %}  
+
+Notice that with the use of the hypothesis framework, I am able to test invariants
+in my code seamlessly, without having to hardcode too much test cases (and it is great).
+
+Let's get back to the problem at hand.
+
+Now that we have the possible set of transformations on a given set of coordinates,
+a possible algorithm to try to identificate common beacon sets between scanners would be
+the following:
+
+1. Take the scanner 0 as reference
+1. On every other scanner:
+   1. For every possible transformation (24)
+       1. Apply the transformation on the list of beacon
+       2. Take the inner product of the reference list and the previously created list
+       3. Output the difference between the two lists
+       4. If a fixed vector as result appears more than 12 times, then do
+          a check to validate that the same beacon is not twice or more in this pairing 
+          (ie, the final solution must be valid)
+          - If the solution is valid, register the transformation and the translation vector:
+            you have identified the position of the scanner being studied relative to the scanner 0.
+          - If the solution is not valid, continue to another scanner
+1. Valid solutions must form a group. Once scanner zero has been succesfully associated
+   with other scanner, the first initial step must be repeated for all newly added scanners,
+   and the inner for-loop must iterate on scanners that are not already found.
+
+Let's try to write with pseudo-code:
+
+```
+allScanners := Set(all scanners)
+studiedScanners := Set(scanner[0])  // studiedScanners are scanners acting as reference to find other scanners
+notFoundScanners := Set(scanner | scanner <- allScanners, scanner not in studiedScanners)
+scannerPositions := Map(scanner[0] -> ((0, 0, 0), Id))
+
+for studiedScanner in studiedScanners:
+  studiedScanners.remove(scanner) // we scrutinize this one, we can remove it from the set of scanners to study
+  for lookedForScanner in notFoundScanners:
+    if lookedForScanner matches studiedScanner:
+        studiedScanners.add(lookedForScanner)
+        position, transformation = getScannerInfo(lookedForScanner)
+        scannerPositions.update(lookedForScanner, (position, transformation))
+```
+
+This algorithm should converge toward the set of position and transformation
+to apply for each scanner to get beacon in the reference frame of scanner[0].
+
+The remaining work is now to apply the inverse transformation to the set of 
+beacon associated with every scanner, and form the total set of beacons, hence
+computing the total number of beacons detected.
+
+First and foremost, let's consider the cardinality of the problem. The standard
+input from advent of code has 32 scanners, and each one of them has approximately
+30 beacon's coordinates.
+
+Checking for correlation between two beacon set will take at most 24 × 900 operations,
+which is quite manageable.
+
+We will need to write two functions: the first one will tell us, if, given a certain
+transformation, the set of coordinates of a single scanner matches the set of coordinate
+of another scanner. The second function must be able to compute the inverse of any given
+transformation.
+
+To verify that a set of coordinates matches another set of coordinates, we are going to use
+the heuristict highlighted above. We will simply procede to coding it and verify that it works
+on the test data given to us by advent of code.
+
+After a sequence of unit testing and validating that the algorithm above works as expected,
+we are very proud to tell you that we got the right answer on the first try, for both stars!
+
+The running time for the real test case is approximately 17 seconds, which is not bad
+considering that nothing is really optimized in our code.
+
+In conclusion, this was a challenging problem, that required a bit of formalization to be
+properly tackled. This formalization could be implemented in two simple Python classes,
+overriding the `tuple` python object, which is itself immutable and well suited for computation
+on small vectors.
+
+This problem was a typical example of how a real-life problem has to be break down in
+small components to be properly addressed:
+
+- first, specify the space of the problem. What are the possibilities you have
+  and where are you constrained for your input set.
+- second, define an abstraction around this space that allows you to work handily
+  around the domain you want to address (matrices and vectors).
+- finally, define a sequence of steps that makes use of the tool you have designed
+  and that solves your problem.
+
+Even the convergence algorithm for the solution was not 100% trivial, and required
+some trial and errors before getting it right.
+
+The `hypothesis` library, in this context, is extremely useful. It allows to check that
+your invariants are well respected in your code. It could have helped us tremendously
+in previous puzzles to get around some hard to find bugs.
+
