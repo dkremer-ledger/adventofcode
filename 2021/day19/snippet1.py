@@ -41,18 +41,15 @@ class Matrix(tuple):
 
 
 def mx():
-    mx = Matrix(((1, 0, 0), (0, 0, 1), (0, -1, 0)))
-    return mx
+    return Matrix(((1, 0, 0), (0, 0, 1), (0, -1, 0)))
 
 
 def my():
-    my = Matrix(((0, -1, 0), (1, 0, 0), (0, 0, 1)))
-    return my
+    return Matrix(((0, 0, -1), (0, 1, 0), (1, 0, 0)))
 
 
 def mz():
-    mz = Matrix(((0, 0, -1), (0, 1, 0), (1, 0, 0)))
-    return mz
+    return Matrix(((0, 1, 0), (-1, 0, 0), (0, 0, 1)))
 
 
 def identity():
