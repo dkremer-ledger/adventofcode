@@ -1,52 +1,24 @@
-import re
-import pytest
-import random
-
 from collections import defaultdict
 import itertools
 
-from snippet1 import mx, my, mz, Matrix, all_rotations, invert, identity, Vector
-
-
-def parse_file(fname):
-    with open(fname) as f:
-        data = f.read()
-    return parse_data(data)
-
-
-def parse_data(data: str):
-    all_scanners_data = re.split(r"--- scanner \d+ ---", data, flags=re.MULTILINE)
-    data = []
-    for scanner in all_scanners_data:
-        if not scanner.strip():
-            continue
-        data.append(
-            [
-                Vector(int(c) for c in l.strip().split(","))
-                for l in scanner.splitlines()
-                if l
-            ]
-        )
-    return data
-
-
-@pytest.fixture
-def data_test():
-    data = parse_file("test.txt")
-    assert len(data) == 5
-    return data
-
-
-@pytest.fixture
-def real_data():
-    data = parse_file("input.txt")
-    return data
+from geometry_utils import Vector, all_cubic_group_transformations
 
 
 def matcher(
     beacon_reference_list: set[Vector], unknown_scanner_beacon_list: set[Vector]
 ):
-    for transformation in all_rotations():
+    """
+    Try to match a list of beacon coordinates expressed in a given reference frame
+    with a list of beacon coordinates expressed in another reference frame.
+
+    The algorithm executes as follow:
+
+    For all transformations of the cubic group
+      | Apply the transformation to the second list of beacons
+      | Build the translation vector for the cartesian product of the first list with the second list
+      |
+    """
+    for transformation in all_cubic_group_transformations:
         result = defaultdict(lambda: [])
         test_list: list[(Vector, Vector)] = [
             (beacon, transformation.apply(beacon))
@@ -63,38 +35,20 @@ def matcher(
         ):
             if len(success) < 12:
                 break
-            is_valid = verify(
+            if is_valid := verify(
                 beacon_reference_list,
                 unknown_scanner_beacon_list,
                 possible_translation_vector,
                 transformation,
-            )
-            if is_valid:
+            ):
                 return is_valid
 
 
 def verify(beacon_source, other_beacons, translation, rotation):
     translated_beacons = set(rotation.apply(b) + translation for b in other_beacons)
     if len(translated_beacons.intersection(set(beacon_source))) < 12:
-        return False
+        return None
     return translation, rotation
-
-
-def test_match_scanner_1_and_scanner_2(data_test):
-    result = matcher(data_test[0], data_test[1])
-    assert result
-    translation, rotation = result
-    data_test_source = set(data_test[0])
-    data_test_remote = set(data_test[1])
-    transformed_remote = set(rotation.apply(b) + translation for b in data_test_remote)
-    assert (
-        len(
-            set(data_test[0]).intersection(
-                set((rotation.apply(b) + translation) for b in data_test[1])
-            )
-        )
-        == 12
-    )
 
 
 def full_beacon_list(data_):
@@ -138,36 +92,3 @@ def max_manhattan_between_scanners(positions):
     ):
         d_max = max(d_max, sum(abs(u - v) for u, v in zip(pos1, pos2)))
     return d_max
-
-
-def test_full_beacon_list(data_test):
-    all_beacons, all_pos = full_beacon_list(data_test)
-    assert len(all_beacons) == 79
-    assert max_manhattan_between_scanners(all_pos) == 3621
-
-
-def test_with_real_data(real_data):
-    all_beacons, positions = full_beacon_list(real_data)
-    print("number of beacons:", len(all_beacons))
-    assert len(all_beacons) == 405
-    d_max = max_manhattan_between_scanners(positions)
-    print(d_max)
-
-
-@pytest.mark.parametrize("rotation", list(all_rotations()))
-def test_matcher(rotation):
-    initial_source = {
-        Vector(
-            (random.randint(0, 1000), random.randint(0, 999), random.randint(0, 999))
-        )
-        for x in range(30)
-    }
-    translation_vector = Vector((345, 789, 123))
-    other_beacon = {rotation.apply(b + translation_vector) for b in initial_source}
-    tr, rot = verify(
-        initial_source,
-        other_beacon,
-        Vector((-1) * v for v in translation_vector),
-        invert(rotation),
-    )
-    assert tr, rot == matcher(initial_source, other_beacon)

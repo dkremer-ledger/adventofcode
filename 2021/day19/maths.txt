@@ -2,7 +2,7 @@ The group of 90 degrees rotation around an axis form a group.
 
 Let's try to derive the whole set of possible rotations, using
 clockwise rotation around any axis (with the perspective of an observer
-toward which the rotation axis is pointing).
+toward which the rotation axis is pointing). 
 
 Here is a 3 dimensional cartesian frame.
    z
