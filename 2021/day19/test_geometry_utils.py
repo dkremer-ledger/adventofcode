@@ -1,15 +1,16 @@
 import itertools
 
 import pytest
-from hypothesis.strategies import integers, builds, tuples, one_of
 from hypothesis import given
+from hypothesis.strategies import builds, integers, one_of, tuples
+
 from geometry_utils import (
     Id,
     Matrix,
-    Vector,
     Tx,
     Ty,
     Tz,
+    Vector,
     all_cubic_group_transformations,
     invert,
 )

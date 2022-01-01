@@ -2,9 +2,9 @@ import random
 
 import pytest
 
-from helpers import parse_file
+from day19 import full_beacon_list, matcher, max_manhattan_between_scanners, verify
 from geometry_utils import Vector, all_cubic_group_transformations, invert
-from day19 import matcher, full_beacon_list, max_manhattan_between_scanners, verify
+from helpers import parse_file
 
 
 @pytest.fixture

@@ -1,5 +1,5 @@
-from collections import defaultdict
 import itertools
+from collections import defaultdict
 
 from geometry_utils import Vector, all_cubic_group_transformations
 

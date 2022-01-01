@@ -1,6 +1,3 @@
-import itertools
-
-
 class Vector(tuple):
     def __sub__(self, other):
         return tuple(u - up for (u, up) in zip(self, other))
