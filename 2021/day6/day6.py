@@ -17,8 +17,8 @@ def evolve_pop(pop):
         if key == 0:
             new_pop[8] += value
             new_pop[6] += value
-        else:
-            new_pop[key - 1] += pop[key]
+            continue
+        new_pop[key - 1] += pop[key]
     return new_pop
 
 
